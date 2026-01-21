@@ -1,6 +1,6 @@
 # OAK-D Lite and MiDaS Depth Estimation: 
 
-<div align="center">
+
 <a href="https://www.python.org" target="_blank" rel="noreferrer" style="display:inline-flex; align-items:center; gap:6px;">
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" width="28"/>
   <span>Python</span>
@@ -23,10 +23,8 @@
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/numpy/numpy-original.svg" width="28"/>
   <span>NumPy</span>
 </a>
-</div>
 
-</br>
-</br>
+
 
 This repository documents a real-time depth estimation pipeline that combines **stereo depth** from an **OAK-D Lite** camera with **monocular depth inference** from **MiDaS (MiDaS_small)**. The system runs online and continuously learns a lightweight mapping that converts the relative MiDaS output into an estimated metric depth in **meters**, using the stereo depth from the OAK-D Lite as a reference.
 
@@ -59,15 +57,17 @@ The **OAK-D Lite** is a DepthAI device that integrates a color camera (RGB) and 
 
 Stereo depth relies on **triangulation**. Given a point observed in both left and right images, its horizontal displacement (disparity) is proportional to depth. In a simplified pinhole model, depth can be expressed as:
 
-\[
-Z = \frac{f \cdot B}{d}
-\]
+<div align="center">
+Z = (f * B) / d
+
+</div>
+
 
 Where:
-- \(Z\) is the depth in meters,
-- \(f\) is the focal length (in pixels),
-- \(B\) is the stereo baseline (meters),
-- \(d\) is the disparity (pixels).
+- Z is the depth in meters,
+- f is the focal length (in pixels),
+- B is the stereo baseline (meters),
+- d is the disparity (pixels).
 
 The OAK-D depth pipeline estimates disparity, refines it internally, and produces a dense depth map. In practice, stereo depth has characteristic limitations: it depends on texture, fails on reflective surfaces, and may produce invalid pixels (often 0) in occluded regions. For this reason, this project focuses on a region-based statistic rather than pixel-wise comparison.
 
@@ -90,8 +90,8 @@ Within the ROI, only valid values contribute to the mean:
 - values strictly greater than zero
 
 This provides a stable scalar depth estimate for both sources:
-- \( \overline{Z}_{oak} \): average stereo depth in meters
-- \( \overline{D}_{midas} \): average MiDaS depth in relative units
+- Zoak: average stereo depth in meters
+- Dmidas: average MiDaS depth in relative units
 
 ---
 
@@ -103,25 +103,30 @@ MiDaS produces relative depth values that often behave like a **disparity-like**
 ### Adopted inverse model
 The calibration uses the following model:
 
-\[
-\overline{Z}_{oak} \approx \frac{a}{(\overline{D}_{midas} + \varepsilon)} + b
-\]
+
+<div align="center">
+Z_oak_mean ≈ a / (D_midas_mean + eps) + b
+</div>
+
 
 Where:
-- \(a\) is a scale parameter,
-- \(b\) is an offset parameter,
-- \(\varepsilon\) is a numerical stability constant to avoid division by zero.
+- a is a scale parameter,
+- b is an offset parameter,
+- eps is a numerical stability constant to avoid division by zero.
 
 Rewriting as a linear regression:
+<div align="center">
 
-\[
-\overline{Z}_{oak} = a \cdot x + b, \quad x = \frac{1}{(\overline{D}_{midas} + \varepsilon)}
-\]
+Z_oak_mean = a * x + b,
+</div>
+
+where x = 1 / (D_midas_mean + eps)
+
 
 The parameters \(a\) and \(b\) are estimated by least squares using `numpy.polyfit(x, y, 1)`.
 
 ### Online update logic
-During runtime, pairs \((\overline{D}_{midas}, \overline{Z}_{oak})\) are appended to a rolling buffer. The first calibration is computed once a minimum amount of data is available. After this, the calibration is periodically updated to compensate for drift in the monocular scale caused by lighting, exposure, scene texture and ROI content changes.
+During runtime, pairs (Dmidas, Zoak) are appended to a rolling buffer. The first calibration is computed once a minimum amount of data is available. After this, the calibration is periodically updated to compensate for drift in the monocular scale caused by lighting, exposure, scene texture and ROI content changes.
 
 ---
 
@@ -129,14 +134,16 @@ During runtime, pairs \((\overline{D}_{midas}, \overline{Z}_{oak})\) are appende
 
 The system displays three synchronized windows:
 - RGB frame captured from OAK-D Lite,
-- OAK-D stereo depth map with ROI overlay and \( \overline{Z}_{oak} \) in meters,
-- MiDaS depth map with ROI overlay and calibrated metric estimate \( \widehat{Z}_{midas} \) in meters.
+- OAK-D stereo depth map with ROI overlay and Zoak in meters,
+- MiDaS depth map with ROI overlay and calibrated metric estimate Zmidas in meters.
 
 After calibration, the MiDaS ROI depth is interpreted as:
 
-\[
-\widehat{Z}_{midas} = \frac{a}{(\overline{D}_{midas} + \varepsilon)} + b
-\]
+<div align="center">
+
+Z_midas_hat = a / (D_midas_mean + eps) + b
+</div>
+
 
 This metric estimate is locally valid within the scene conditions that produced the calibration sample set. It should be treated as an empirical metric mapping rather than an absolute guarantee of monocular metric depth.
 
