@@ -1,6 +1,6 @@
 # OAK-D Lite and MiDaS Depth Estimation: 
 
-
+<div align="center">
 <a href="https://www.python.org" target="_blank" rel="noreferrer" style="display:inline-flex; align-items:center; gap:6px;">
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" width="28"/>
   <span>Python</span>
@@ -23,8 +23,10 @@
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/numpy/numpy-original.svg" width="28"/>
   <span>NumPy</span>
 </a>
+</div>
 
-
+</br>
+</br>
 
 This repository documents a real-time depth estimation pipeline that combines **stereo depth** from an **OAK-D Lite** camera with **monocular depth inference** from **MiDaS (MiDaS_small)**. The system runs online and continuously learns a lightweight mapping that converts the relative MiDaS output into an estimated metric depth in **meters**, using the stereo depth from the OAK-D Lite as a reference.
 
