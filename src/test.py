@@ -31,6 +31,7 @@ monoRight.out.link(stereo.right)
 
 stereo.disparity.link(sync.inputs["disparity"])
 color.video.link(sync.inputs["video"])
+color.setResolution(dai.ColorCameraProperties.SensorResolution.THE_800_P)
 
 sync.out.link(xoutGrp.input)
 

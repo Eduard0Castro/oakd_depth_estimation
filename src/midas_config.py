@@ -61,15 +61,17 @@ class Calibrate:
     RECALIBRATE_N            = 20          
     NEW_SAMPLES_SINCE_CALIB  =  0      
 
+    RMS_MAX_SAMPLES = 20
+    RMS_SAMPLES_COUNT = 0
+    RMS_ERROR_THRESHOLD = 0.2
+    SQUARE_ERROR_LIST = list()
 
     @classmethod
-    def fit_inverse_calibration(cls, eps: float = 1e-6):
+    def fit_inverse_calibration(cls):
 
         """
         Adjustment: z_oak = a * (1/(midas+eps)) + b
-        
-        :param eps(float): numerical stability
-        
+                
         Returns (a, b) using least squares through the polyfit method.
          
         """
@@ -82,15 +84,31 @@ class Calibrate:
         if np.count_nonzero(valid) < cls.MIN_SAMPLES_TO_CALIBRATE:
             return None, None
 
-        x = 1.0 / (midas_arr[valid] + eps)
+        x = 1.0 / (midas_arr[valid] + Calibrate.EPS)
         y = oak_arr[valid]
 
         a, b = np.polyfit(x, y, 1)  # y = a*x + b
         return float(a), float(b)
 
+    @classmethod
+    def fit_direct_calibration(cls) -> tuple[float, float]:
+
+
+        midas_arr = np.asarray(Calibrate.MIDAS_SAMPLES, dtype=np.float64)
+        oak_arr   = np.asarray(Calibrate.OAKD_SAMPLES, dtype=np.float64)
+
+        valid = np.isfinite(midas_arr) & np.isfinite(oak_arr) & (midas_arr > 0) & (oak_arr > 0)
+        if np.count_nonzero(valid) < cls.MIN_SAMPLES_TO_CALIBRATE:
+            return None, None
+
+        x = (midas_arr[valid] + Calibrate.EPS)
+        y = oak_arr[valid]
+
+        a, b = np.polyfit(x, y, 1)  # y = a*x + b
+        return float(a), float(b)
 
     @classmethod
-    def midas_to_meters(cls, depth_midas_mean, eps=1e-6):
+    def midas_to_meters(cls, depth_midas_mean):
 
         """
         Converts MiDaS average (relative) to meters (estimated), using inverse calibration.
@@ -101,4 +119,4 @@ class Calibrate:
             return float("nan")
         if not np.isfinite(depth_midas_mean) or depth_midas_mean <= 0:
             return float("nan")
-        return float(cls.A_INV / (depth_midas_mean + eps) + cls.B_INV)
+        return float(cls.A_INV / (depth_midas_mean + Calibrate.EPS) + cls.B_INV)
